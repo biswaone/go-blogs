@@ -3,7 +3,7 @@ A blogging taking app written in go
 
 Work In Progress
 
-shell```
+```
 make build
 ./bin/goblogs
 ```
