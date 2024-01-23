@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // sudo docker run -p 5432:5432 -e POSTGRES_DB=gonotes -e POSTGRES_USER=gonotes -e POSTGRES_PASSWORD=gnotes --name pg postgres
@@ -13,13 +16,14 @@ import (
 // 	address string
 // }
 
-func setupHandlers(mux *http.ServeMux) {
-	// mux.HandleFunc("/healthchecker", HealthCheckHandler)
-	mux.HandleFunc("/api/user/register", RegisterUserHandler)
+func setupHandlers(mux *http.ServeMux, db *pgx.Conn) {
+	mux.HandleFunc("/healthchecker", HealthCheckHandler)
+	mux.HandleFunc("/api/user/register", RegisterUserHandler(db))
 }
 
 func main() {
-	db := initDB()
+
+	db := GetDB()
 	setupDatabaseTables(db)
 	// mux := http.NewServeMux()
 	// mux.HandleFunc("/api/signup", handleSignUp)
@@ -28,13 +32,13 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	// defer db.Close(context.Background())
+	defer db.Close(context.Background())
 	listenAddr := os.Getenv("LISTEN_ADDR")
 	if len(listenAddr) == 0 {
 		listenAddr = ":8080"
 	}
 	mux := http.NewServeMux()
-	setupHandlers(mux)
+	setupHandlers(mux, db)
 	log.Fatal(http.ListenAndServe(listenAddr, mux))
 
 }

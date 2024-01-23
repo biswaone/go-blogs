@@ -1,9 +1,15 @@
 package user
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/biswaone/go-blogs/auth"
+	"github.com/jackc/pgx/v5"
+)
 
 type RegisterUser struct {
-	Username string  `json:"username"`
 	Name     string  `json:"name"`
 	Email    string  `json:"email"`
 	Password *string `json:"password"`
@@ -31,17 +37,30 @@ func (u RegisterUser) ValidateNewUser() error {
 	if u.Password == nil {
 		return ErrInvalidPassword
 	}
-	if u.Username == "" {
+	if u.Name == "" {
 		return ErrInvladUsername
 	}
 	return nil
 
 }
 
-func (u RegisterUser) CreateUser() (*RegisterUser, error) {
-	err := u.ValidateNewUser()
+func (u RegisterUser) CreateUser(db *pgx.Conn) (*RegisterUser, error) {
+	hashedPassword, err := auth.HashPassword(*u.Password)
 	if err != nil {
 		return &RegisterUser{}, err
 	}
-	return &RegisterUser{Name: u.Name, Email: u.Email, Username: u.Username}, nil
+	query := `
+	INSERT INTO Users (Name, Email, Password)
+		VALUES ($1, $2, $3)
+		RETURNING UserID, RegistrationDate
+	`
+	user, err := db.Exec(context.Background(), query, u.Name, u.Email, hashedPassword)
+	if err != nil {
+		return &RegisterUser{}, err
+	}
+
+	fmt.Println(hashedPassword)
+	fmt.Println(user)
+
+	return &RegisterUser{Name: u.Name, Email: u.Email}, nil
 }

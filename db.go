@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func initDB() *pgx.Conn {
+func GetDB() *pgx.Conn {
 	DATABASE_URL := "postgres://goblogs:goblogs@localhost:5432/goblogs"
 	conn, err := pgx.Connect(context.Background(), DATABASE_URL)
 	if err != nil {
@@ -41,8 +41,8 @@ func createUsersTable(conn *pgx.Conn) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS Users (
 			UserID SERIAL PRIMARY KEY,
-			Username VARCHAR(50) NOT NULL,
-			Email VARCHAR(100) NOT NULL,
+			Name VARCHAR(50) NOT NULL,
+			Email VARCHAR(100) UNIQUE NOT NULL,
 			Password VARCHAR(255) NOT NULL,
 			ProfilePicture VARCHAR(255),
 			RegistrationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
