@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
+	"time"
 
 	"github.com/biswaone/go-blogs/auth"
 	"github.com/jackc/pgx/v5"
@@ -16,8 +16,9 @@ type RegisterUser struct {
 }
 
 type Response struct {
-	Message string       `json:"message"`
-	User    RegisterUser `json:"user"`
+	Message          string     `json:"message"`
+	RegsitrationDate *time.Time `json:"registration_date,omitempty"`
+	Exception        *string    `json:"exception,omitempty"`
 }
 
 var (
@@ -44,23 +45,22 @@ func (u RegisterUser) ValidateNewUser() error {
 
 }
 
-func (u RegisterUser) CreateUser(db *pgx.Conn) (*RegisterUser, error) {
+func (u RegisterUser) CreateUser(db *pgx.Conn) (*Response, error) {
 	hashedPassword, err := auth.HashPassword(*u.Password)
 	if err != nil {
-		return &RegisterUser{}, err
+		return &Response{Message: "Cannot Create User"}, err
 	}
+	var userID int
+	var registrationDate time.Time
 	query := `
 	INSERT INTO Users (Name, Email, Password)
 		VALUES ($1, $2, $3)
 		RETURNING UserID, RegistrationDate
 	`
-	user, err := db.Exec(context.Background(), query, u.Name, u.Email, hashedPassword)
+	err = db.QueryRow(context.Background(), query, u.Name, u.Email, hashedPassword).Scan(&userID, &registrationDate)
 	if err != nil {
-		return &RegisterUser{}, err
+		return &Response{}, err
 	}
 
-	fmt.Println(hashedPassword)
-	fmt.Println(user)
-
-	return &RegisterUser{Name: u.Name, Email: u.Email}, nil
+	return &Response{Message: "User Created Successfully", RegsitrationDate: &registrationDate}, nil
 }

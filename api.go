@@ -11,6 +11,7 @@ import (
 
 func RegisterUserHandler(db *pgx.Conn) func(http.ResponseWriter, *http.Request) {
 	return (func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		var dto user.RegisterUser
 		err := json.NewDecoder(r.Body).Decode(&dto)
 		if err != nil {
@@ -19,17 +20,20 @@ func RegisterUserHandler(db *pgx.Conn) func(http.ResponseWriter, *http.Request) 
 		}
 		err = dto.ValidateNewUser()
 		if err != nil {
-			http.Error(w, "Error: validation Error, Mssg: "+err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			errMessage := err.Error()
+			response := user.Response{Message: "Invalid User Request", Exception: &errMessage}
+			json.NewEncoder(w).Encode(response)
 			return
 		}
-		newUser, err := dto.CreateUser(db)
+		response, err := dto.CreateUser(db)
 		if err != nil {
-			http.Error(w, "Cannot create user "+err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			errMessage := err.Error()
+			response := user.Response{Message: "Cannot Create User", Exception: &errMessage}
+			json.NewEncoder(w).Encode(response)
 			return
 		}
-		response := user.Response{Message: "User Successfully Registered", User: *newUser}
-		w.Header().Set("Content-Type", "application/json")
-
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(response)
 	})
