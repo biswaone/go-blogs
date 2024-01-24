@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/biswaone/go-blogs/internal/handlers"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -17,8 +18,8 @@ import (
 // }
 
 func setupHandlers(mux *http.ServeMux, db *pgx.Conn) {
-	mux.HandleFunc("/healthchecker", HealthCheckHandler)
-	mux.HandleFunc("/api/user/register", RegisterUserHandler(db))
+	mux.HandleFunc("/healthchecker", handlers.HealthCheckHandler)
+	mux.HandleFunc("/api/user/register", handlers.RegisterUserHandler(db))
 }
 
 func main() {
