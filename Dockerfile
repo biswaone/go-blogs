@@ -1,18 +1,18 @@
-FROM golang:latest
+FROM golang:1.21.5 as builder
 
+ARG CGO_ENABLED=0
 WORKDIR /app
 
-COPY makefile .
-COPY go.mod .
-COPY go.sum .
-
+COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy rest of application code
 COPY . .
 
-RUN make build
+RUN go build -o bin/go-blogs
+# RUN make build
+
+FROM scratch
+COPY --from=builder /app/bin/go-blogs /
 
 EXPOSE 8080
 
-CMD ["./bin/goblogs"]
+ENTRYPOINT [ "/go-blogs" ] 

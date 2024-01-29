@@ -10,7 +10,7 @@ import (
 )
 
 func GetDB() *pgx.Conn {
-	DATABASE_URL := "postgres://goblogs:goblogs@localhost:5432/goblogs"
+	DATABASE_URL := "postgres://postgres:postgres@postgres:5432/goblogs"
 	conn, err := pgx.Connect(context.Background(), DATABASE_URL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
