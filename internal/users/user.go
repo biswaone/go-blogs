@@ -1,18 +1,20 @@
-package user
+package users
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
-	"github.com/biswaone/go-blogs/internal/api/auth"
+	"github.com/biswaone/go-blogs/internal/utils"
 	"github.com/jackc/pgx/v5"
 )
 
-type RegisterUser struct {
-	Name     string  `json:"name"`
-	Email    string  `json:"email"`
-	Password *string `json:"password"`
+type User struct {
+	Name           string  `json:"name"`
+	Email          string  `json:"email"`
+	Password       *string `json:"password"`
+	ProfilePicture string  `json:"profile_picture"`
 }
 
 type Response struct {
@@ -28,7 +30,7 @@ var (
 	ErrInvladUsername  = errors.New("EmptyUsernameNotAllowed")
 )
 
-func (u RegisterUser) ValidateNewUser() error {
+func (u User) ValidateNewUser() error {
 	if u.Name == "" {
 		return ErrInvalidName
 	}
@@ -45,8 +47,8 @@ func (u RegisterUser) ValidateNewUser() error {
 
 }
 
-func (u RegisterUser) CreateUser(db *pgx.Conn) (*Response, error) {
-	hashedPassword, err := auth.HashPassword(*u.Password)
+func (u User) CreateUser(db *pgx.Conn) (*Response, error) {
+	hashedPassword, err := utils.HashPassword(*u.Password)
 	if err != nil {
 		return &Response{Message: "Cannot Create User"}, err
 	}
@@ -63,4 +65,17 @@ func (u RegisterUser) CreateUser(db *pgx.Conn) (*Response, error) {
 	}
 
 	return &Response{Message: "User Created Successfully", RegsitrationDate: &registrationDate}, nil
+}
+
+func GetUserByEmail(db *pgx.Conn, email string) (*User, error) {
+	var name, password, profilePicture sql.NullString
+	query := `	
+	SELECT Name, Password, ProfilePicture FROM Users WHERE Email = $1
+	`
+	err := db.QueryRow(context.Background(), query, email).Scan(&name, &password, &profilePicture)
+	if err != nil {
+		return &User{}, err
+	}
+	return &User{Name: name.String, Email: email, Password: &password.String, ProfilePicture: profilePicture.String}, nil
+
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/biswaone/go-blogs/internal/handlers"
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 // sudo docker run -p 5432:5432 -e POSTGRES_DB=gonotes -e POSTGRES_USER=gonotes -e POSTGRES_PASSWORD=gnotes --name pg postgres
@@ -20,10 +21,15 @@ import (
 func setupHandlers(mux *http.ServeMux, db *pgx.Conn) {
 	mux.HandleFunc("/healthchecker", handlers.HealthCheckHandler)
 	mux.HandleFunc("/api/user/register", handlers.RegisterUserHandler(db))
+	mux.HandleFunc("/api/user/login", handlers.LoginHandler(db))
 }
 
 func main() {
 
+	err := godotenv.Load("local.env")
+	if err != nil {
+		log.Fatal(err)
+	}
 	db := GetDB()
 	setupDatabaseTables(db)
 	// mux := http.NewServeMux()

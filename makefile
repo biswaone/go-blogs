@@ -1,8 +1,8 @@
 build:
-	@go build -o bin/goblogs
+	@go build -o bin/go-blogs
 
 run: build
-	@./bin/goblogs
+	@./bin/go-blogs
 
 test:
 	@go test -v ./...

@@ -2,43 +2,46 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/biswaone/go-blogs/internal/users"
 	"github.com/jackc/pgx/v5"
 )
 
-func RegisterUserHandler(db *pgx.Conn) func(http.ResponseWriter, *http.Request) {
+func LoginHandler(db *pgx.Conn) func(http.ResponseWriter, *http.Request) {
 	return (func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "This method is not allowed.", http.StatusMethodNotAllowed)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
-		var dto users.User
+		var dto users.LoginRequest
 		err := json.NewDecoder(r.Body).Decode(&dto)
 		if err != nil {
 			http.Error(w, "Invalid JSON in request: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = dto.ValidateNewUser()
+		user, err := dto.ValidateLoginRequest(db)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			errMessage := err.Error()
-			response := users.Response{Message: "Invalid User Request", Exception: &errMessage}
+			response := users.LoginResponse{Message: errMessage}
 			json.NewEncoder(w).Encode(response)
 			return
 		}
-		response, err := dto.CreateUser(db)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			errMessage := err.Error()
-			response := users.Response{Message: "Cannot Create User", Exception: &errMessage}
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
-	})
-}
 
-func HealthCheckHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "ok")
+		token, err := dto.Login(*user)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			errMessage := err.Error()
+			response := users.LoginResponse{Message: errMessage}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		response := users.LoginResponse{Message: "User Loggedin Successfully", AccessToken: token}
+		json.NewEncoder(w).Encode(response)
+
+	})
 }

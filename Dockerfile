@@ -7,11 +7,12 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN go build -o bin/go-blogs
-# RUN make build
+# RUN go build -o bin/go-blogs
+RUN make build
 
 FROM scratch
-COPY --from=builder /app/bin/go-blogs /
+COPY --from=builder ["/app/*.env", "/"]
+COPY --from=builder ["/app/bin/go-blogs", "/"]
 
 EXPOSE 8080
 
